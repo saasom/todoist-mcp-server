@@ -113,10 +113,25 @@ const DELETE_TASK_TOOL: Tool = {
   }
 };
 
+const COMPLETE_TASK_TOOL: Tool = {
+  name: "todoist_complete_task",
+  description: "Mark a task as complete by searching for it by name",
+  inputSchema: {
+    type: "object",
+    properties: {
+      task_name: {
+        type: "string",
+        description: "Name/content of the task to search for and complete"
+      }
+    },
+    required: ["task_name"]
+  }
+};
+
 // Server implementation
 const server = new Server(
   {
-    name: "todoist-mcp-server",  // Updated name
+    name: "todoist-mcp-server",
     version: "0.1.0",
   },
   {
@@ -189,9 +204,20 @@ function isDeleteTaskArgs(args: unknown): args is {
   );
 }
 
+function isCompleteTaskArgs(args: unknown): args is {
+  task_name: string;
+} {
+  return (
+    typeof args === "object" &&
+    args !== null &&
+    "task_name" in args &&
+    typeof (args as { task_name: string }).task_name === "string"
+  );
+}
+
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL],
+  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL, COMPLETE_TASK_TOOL],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -322,6 +348,39 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [{ 
           type: "text", 
           text: `Successfully deleted task: "${matchingTask.content}"` 
+        }],
+        isError: false,
+      };
+    }
+
+    if (name === "todoist_complete_task") {
+      if (!isCompleteTaskArgs(args)) {
+        throw new Error("Invalid arguments for todoist_complete_task");
+      }
+
+      // First, search for the task
+      const tasks = await todoistClient.getTasks();
+      const matchingTask = tasks.find(task => 
+        task.content.toLowerCase().includes(args.task_name.toLowerCase())
+      );
+
+      if (!matchingTask) {
+        return {
+          content: [{ 
+            type: "text", 
+            text: `Could not find a task matching "${args.task_name}"` 
+          }],
+          isError: true,
+        };
+      }
+
+      // Complete the task
+      await todoistClient.closeTask(matchingTask.id);
+      
+      return {
+        content: [{ 
+          type: "text", 
+          text: `Successfully completed task: "${matchingTask.content}"` 
         }],
         isError: false,
       };
