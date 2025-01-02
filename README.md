@@ -2,6 +2,8 @@
 
 An MCP (Model Context Protocol) server implementation that integrates Claude with Todoist, enabling natural language task management. This server allows Claude to interact with your Todoist tasks using everyday language.
 
+This was forked from @abhiz123 todoist-mcp-server. I have updated this version with new descriptions that are meant to increase the accuracy of the model at understanding what tool to use and how. 
+
 ## Features
 
 * **Natural Language Task Management**: Create, update, complete, and delete tasks using everyday language
@@ -13,7 +15,7 @@ An MCP (Model Context Protocol) server implementation that integrates Claude wit
 ## Installation
 
 ```bash
-npm install -g @abhiz123/todoist-mcp-server
+npm install -g @saasom/todoist-mcp-server
 ```
 
 ## Tools
